@@ -2,6 +2,7 @@
 import 'dart:convert'; // Used for decoding JSON responses
 import 'package:flutter/material.dart'; // Flutter UI framework
 import 'package:flutter_map/flutter_map.dart'; // Flutter map plugin for OpenStreetMap
+import 'package:flutter_map/plugin_api.dart';
 import 'package:latlong2/latlong.dart'; // Used for LatLng class (coordinates)
 import 'package:http/http.dart' as http; // HTTP package to make API requests
 
@@ -113,55 +114,78 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // App bar title
       appBar: AppBar(title: const Text('🏔️ Elevation Map')),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return FlutterMap(
+            options: MapOptions(
+              center: LatLng(0, 0),
+              zoom: 2.0,
+              interactiveFlags: InteractiveFlag.all, // Allows all gestures (drag, zoom, etc.)
+              onTap: (tapPosition, point) {
+                handleTap(point); // Fetch elevation and store
+              },
+            ),
+            children: [
+              // Base map layer
+              TileLayer(
+                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c'],
+                userAgentPackageName: 'com.example.elevation_map',
+              ),
 
-      // Main map body
-      body: FlutterMap(
-        options: MapOptions(
-          center: LatLng(0, 0), // Initial center of the map (equator)
-          zoom: 2.0,            // Initial zoom level
-          
-          // Handle tap on map
-          onTap: (tapPosition, point) {
-            handleTap(point); // Fetch and show elevation
-          },
-        ),
-        children: [
-          // Base map using OpenStreetMap tiles
-          TileLayer(
-            urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            subdomains: ['a', 'b', 'c'], // Subdomains for faster tile loading
-            userAgentPackageName: 'com.example.elevation_map',
-          ),
+              // Optional: Line layer
+              PolylineLayer(polylines: polylines),
 
-          // Line layer to draw polylines between points
-          PolylineLayer(polylines: polylines),
+              // 🧠 Custom overlay for elevation boxes
+              Builder(
+                builder: (ctx) {
+                  final map = FlutterMapState.maybeOf(ctx)!;
 
-          // Markers showing elevation values at selected points
-          MarkerLayer(
-            markers: elevationData.entries.map((entry) {
-              return Marker(
-                point: entry.key, // Location of the marker
-                width: 120,
-                height: 50,
-                builder: (ctx) => Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8), // Background color with opacity
-                    borderRadius: BorderRadius.circular(8), // Rounded corners
-                    border: Border.all(color: Colors.black54), // Border styling
-                  ),
-                  child: Text(
-                    '${entry.value.toStringAsFixed(1)} m', // Elevation label
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
-              );
-            }).toList(), // Convert map entries to a list of markers
-          ),
-        ],
+                  return Stack(
+                    children: elevationData.entries.map((entry) {
+                      final point = entry.key;
+                      final elevation = entry.value;
+
+                      final pixelPoint = map.project(point) - map.pixelOrigin;
+
+                      return Positioned(
+                        left: pixelPoint.x.toDouble() - 40,
+                        top: pixelPoint.y.toDouble() - 50,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.black87),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: Offset(2, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '${elevation.toStringAsFixed(1)} m',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+
+            ],
+          );
+        },
       ),
     );
   }
+
 }
