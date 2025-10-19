@@ -50,13 +50,9 @@ class _MapPageState extends State<MapPage> {
       urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     ),
     MapLayerOption(
-      name: 'Stamen Toner',
-      urlTemplate: 'https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png',
-    ),
-    MapLayerOption(
-      name: 'Stamen Terrain',
-      urlTemplate: 'https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png',
-    ),
+      name: 'Satellite',
+      urlTemplate: 'https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg',
+    )
   ];
 
   late MapLayerOption selectedLayer;
@@ -130,7 +126,34 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('🏔️ Elevation Map')),
+      appBar: AppBar(
+        title: const Text('🏔️ Elevatr(Get elevation details)'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'options') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const OptionsScreen()),
+                );
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                const PopupMenuItem<String>(
+                  value: 'options',
+                  child: Text('More Options'),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'add_line',
+                  child: Text('Add Lines'),
+                ),
+              ];
+            },
+
+          ),
+        ],
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           return Stack(
@@ -270,3 +293,28 @@ class _MapPageState extends State<MapPage> {
     );
   }
 }
+
+class OptionsScreen extends StatelessWidget {
+  const OptionsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('More Options'),
+      ),
+      body: ListView(
+        children: const [
+          // Placeholder for now
+          ListTile(
+            title: Text('Option 1 (Coming Soon)'),
+          ),
+          ListTile(
+            title: Text('Option 2 (Coming Soon)'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
